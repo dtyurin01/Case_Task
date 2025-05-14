@@ -3,18 +3,26 @@
   "version": "1.0.0",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/app/index.ts",
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "test": "jest --runInBand"
   },
   "dependencies": {
     "@prisma/client": "^6.7.0",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
-    "prisma": "^6.7.0"
+    "prisma": "^6.7.0",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.1",
+    "@types/jest": "^29.5.14",
+    "@types/supertest": "^6.0.3",
+    "@types/uuid": "^10.0.0",
+    "jest": "^29.7.0",
+    "supertest": "^7.1.1",
+    "ts-jest": "^29.3.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.8.3"
   }
