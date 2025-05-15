@@ -1,118 +1,132 @@
-// docker-compose run --rm app npx prisma migrate dev --name init
-// docker-compose run --rm -p 5555:5555 app npx prisma studio
+import "dotenv/config";
+import express, {
+  Request,
+  Response,
+  NextFunction,
+  RequestHandler,
+} from "express";
 
-
-import 'dotenv/config';
-import express, { Request, Response, NextFunction, RequestHandler } from 'express';
-import { PrismaClient, Frequency } from '@prisma/client';
-import { v4 as uuidv4 } from 'uuid';
+import {
+  getCurrentWeather,
+  CityNotFoundError,
+  WeatherError,
+} from "../services/weatherService";
+import {
+  subscribeUser,
+  confirmSubscription,
+  unsubscribeUser,
+} from "../services/subscriptionService";
+import { Frequency } from "@prisma/client";
 
 const app = express();
-const prisma = new PrismaClient();
+const PORT = Number(process.env.PORT) || 4000;
 
 // --- Middleware ---
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const wrap =
-  (fn: (req: Request, res: Response, next: NextFunction) => Promise<void | Response>): RequestHandler =>
-  (req, res, next) =>
-    Promise.resolve(fn(req, res, next)).then(() => undefined).catch(next);
+  (
+    fn: (
+      req: Request,
+      res: Response,
+      next: NextFunction
+    ) => Promise<void | Response>
+  ): RequestHandler =>
+  async (req, res, next): Promise<void> => {
+    try {
+      await fn(req, res, next);
+    } catch (error) {
+      next(error);
+    }
+  };
 
 app.get(
-  '/api/weather',
+  "/api/weather",
   wrap(async (req: Request, res: Response) => {
     const city = req.query.city as string;
-    if (!city) {
-      return res.status(400).json({ error: 'City is required' });
+    try {
+      const apiKey = process.env.WEATHER_API_KEY!;
+      const weather = await getCurrentWeather(city, apiKey);
+      return res.json(weather);
+    } catch (err) {
+      if (err instanceof CityNotFoundError) {
+        return res.status(404).json({ error: err.message });
+      }
+      if (err instanceof WeatherError) {
+        return res.status(400).json({ error: err.message });
+      }
+      throw err;
     }
-
-    const apiKey = process.env.WEATHER_API_KEY;
-    if (!apiKey) {
-      return res.status(500).json({ error: 'Missing WEATHER_API_KEY' });
-    }
-
-    const url = `https://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${encodeURIComponent(
-      city
-    )}`;
-    const resp = await fetch(url);
-    if (resp.status === 404) {
-      return res.status(404).json({ error: 'City not found' });
-    }
-    if (!resp.ok) {
-      const text = await resp.text();
-      console.error('WeatherAPI error:', text);
-      return res.status(502).json({ error: 'Weather API error' });
-    }
-
-    const data = await resp.json();
-    return res.json({
-      temperature: data.current.temp_c,
-      humidity: data.current.humidity,
-      description: data.current.condition.text,
-    });
   })
 );
 
 app.post(
-  '/api/subscribe',
+  "/api/subscribe",
   wrap(async (req: Request, res: Response) => {
     const { email, city, frequency } = req.body;
     if (!email || !city || !frequency) {
-      return res.status(400).json({ error: 'Invalid input' });
+      return res.status(400).json({ error: "Invalid input" });
     }
-    if (!['hourly', 'daily'].includes(frequency)) {
-      return res.status(400).json({ error: 'Frequency must be hourly or daily' });
-    }
-
-    const exists = await prisma.subscription.findUnique({ where: { email } });
-    if (exists) {
-      return res.status(409).json({ error: 'Email already subscribed' });
+    if (!["hourly", "daily"].includes(frequency)) {
+      return res
+        .status(400)
+        .json({ error: "Frequency must be hourly or daily" });
     }
 
-    const confirmToken = uuidv4();
-    const unsubscribeToken = uuidv4();
-    await prisma.subscription.create({
-      data: { email, city, frequency: frequency as Frequency, confirmToken, unsubscribeToken },
-    });
-
-    // TODO: send an email with the link `/api/confirm/${confirmToken}`
-    return res.json({ message: 'Subscription successful. Confirmation email sent.' });
+    try {
+      const sub = await subscribeUser(email, city, frequency as Frequency);
+      // TODO: send confirmation email with sub.confirmToken
+      return res.json({
+        message: "Subscription successful. Confirmation email sent.",
+      });
+    } catch (err: any) {
+      if (err.message === "Email already subscribed") {
+        return res.status(409).json({ error: err.message });
+      }
+      throw err;
+    }
   })
 );
 
 app.get(
-  '/api/confirm/:token',
+  "/api/confirm/:token",
   wrap(async (req: Request, res: Response) => {
     const { token } = req.params;
-    const sub = await prisma.subscription.findUnique({ where: { confirmToken: token } });
-    if (!sub) {
-      return res.status(404).json({ error: 'Token not found' });
+    try {
+      await confirmSubscription(token);
+      return res.json({ message: "Subscription confirmed successfully" });
+    } catch (err: any) {
+      if (err.message === "Token not found") {
+        return res.status(404).json({ error: err.message });
+      }
+      if (err.message === "Already confirmed") {
+        return res.status(400).json({ error: err.message });
+      }
+      throw err;
     }
-    if (sub.confirmed) {
-      return res.status(400).json({ error: 'Already confirmed' });
-    }
-    await prisma.subscription.update({ where: { id: sub.id }, data: { confirmed: true } });
-    return res.json({ message: 'Subscription confirmed successfully' });
   })
 );
 
 app.get(
-  '/api/unsubscribe/:token',
+  "/api/unsubscribe/:token",
   wrap(async (req: Request, res: Response) => {
     const { token } = req.params;
-    const sub = await prisma.subscription.findUnique({ where: { unsubscribeToken: token } });
-    if (!sub) {
-      return res.status(404).json({ error: 'Token not found' });
+    try {
+      await unsubscribeUser(token);
+      return res.json({ message: "Unsubscribed successfully" });
+    } catch (err: any) {
+      if (err.message.includes("Invalid")) {
+        return res.status(404).json({ error: err.message });
+      }
+      throw err;
     }
-    await prisma.subscription.delete({ where: { id: sub.id } });
-    return res.json({ message: 'Unsubscribed successfully' });
   })
 );
 
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({ error: 'Internal server error' });
+  console.error("Unhandled error:", err);
+  res.status(500).json({ error: "Internal server error" });
 });
 
 export default app;
