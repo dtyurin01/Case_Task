@@ -17,17 +17,15 @@ services:
     env_file:
       - .env
     volumes:
-      # 1) биндим только код, который меняем
       - ./src:/usr/src/app/src
       - ./prisma:/usr/src/app/prisma
       - ./.env:/usr/src/app/.env
-
-      # 2) защищаем зависимости от затирания
+      - ./__tests__:/usr/src/app/__tests__
       - node_modules:/usr/src/app/node_modules
-
-      # 3) защищаем сгенерированный Prisma Client
       - prisma_client:/usr/src/app/generated
 
+    command: sh -c "npx prisma migrate dev && npm run dev"
+    
     ports:
       - "4000:4000"
     depends_on:

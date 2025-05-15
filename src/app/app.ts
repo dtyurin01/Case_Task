@@ -1,3 +1,7 @@
+// docker-compose run --rm app npx prisma migrate dev --name init
+// docker-compose run --rm -p 5555:5555 app npx prisma studio
+
+
 import 'dotenv/config';
 import express, { Request, Response, NextFunction, RequestHandler } from 'express';
 import { PrismaClient, Frequency } from '@prisma/client';
@@ -72,7 +76,7 @@ app.post(
       data: { email, city, frequency: frequency as Frequency, confirmToken, unsubscribeToken },
     });
 
-    // TODO: отправить письмо с ссылкой `/api/confirm/${confirmToken}`
+    // TODO: send an email with the link `/api/confirm/${confirmToken}`
     return res.json({ message: 'Subscription successful. Confirmation email sent.' });
   })
 );
