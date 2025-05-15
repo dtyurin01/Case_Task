@@ -4,34 +4,51 @@ services:
   db:
     image: postgres:15
     env_file:
-      - .env
+      - ./backend/.env
     volumes:
       - db_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
 
-  app:
+  backend:
     build:
-      context: ./
+      context: ./backend
       dockerfile: Dockerfile
     env_file:
-      - .env
+      - ./backend/.env
     volumes:
-      - ./src:/usr/src/app/src
-      - ./prisma:/usr/src/app/prisma
-      - ./.env:/usr/src/app/.env
-      - ./__tests__:/usr/src/app/__tests__
-      - node_modules:/usr/src/app/node_modules
-      - prisma_client:/usr/src/app/generated
-
-    command: sh -c "npx prisma migrate dev && npm run dev"
-    
+      - ./backend/src:/usr/src/app/src
+      - ./backend/prisma:/usr/src/app/prisma
+      - ./backend/.env:/usr/src/app/.env
+      - backend_node_modules:/usr/src/app/node_modules
+      - backend_prisma_client:/usr/src/app/generated
+    command: >
+      sh -c "
+        npx prisma migrate deploy &&
+        npm run dev
+      "
     ports:
       - "4000:4000"
     depends_on:
       - db
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    env_file:
+      - ./frontend/.env
+    volumes:
+      - ./frontend:/usr/src/app
+      - frontend_node_modules:/usr/src/app/node_modules
+    command: npm run dev
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
 volumes:
   db_data:
-  node_modules:
-  prisma_client:
+  backend_node_modules:
+  backend_prisma_client:
+  frontend_node_modules:
