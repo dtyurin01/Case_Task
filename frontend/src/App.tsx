@@ -176,7 +176,7 @@ export default function App() {
           placeholder="City"
         />
         <button className="styled-button" onClick={load} disabled={!city}>
-          {confirmed ? "Get Weather" : "Enter city name"}
+          {city ? "Get Weather" : "Enter city name"}
         </button>
       </div>
 
@@ -197,6 +197,8 @@ export default function App() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Email"
+          type="email"
+          required
         />
         <select
           className="styled-input"
@@ -216,8 +218,12 @@ export default function App() {
         >
           {getSubscribeButtonText()}
         </button>
-        <button className="styled-button" onClick={onCheckStatus}>
-          Check Status
+        <button
+          className="styled-button"
+          onClick={onCheckStatus}
+          disabled={!email}
+        >
+          {email ? "Check Status" : "Enter Email first"}
         </button>
 
         <button

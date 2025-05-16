@@ -78,7 +78,6 @@ app.post(
   wrap(async (req: Request, res: Response) => {
     const { email, city, frequency } = req.body;
 
-
     const sub = await subscribeUser(email, city, frequency as Frequency);
     console.log("[subscribe] subscription record:", sub);
 
@@ -105,6 +104,7 @@ app.post(
 
     return res.json({
       message: "Subscription successful. Confirmation email sent.",
+      unsubscribeToken: sub.unsubscribeToken,
     });
   })
 );
