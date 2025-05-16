@@ -20,7 +20,6 @@ services:
       - ./backend/src:/usr/src/app/src
       - ./backend/prisma:/usr/src/app/prisma
       - ./backend/.env:/usr/src/app/.env
-      - backend_node_modules:/usr/src/app/node_modules
       - backend_prisma_client:/usr/src/app/generated
     command: >
       sh -c "
@@ -40,7 +39,6 @@ services:
       - ./frontend/.env
     volumes:
       - ./frontend:/usr/src/app
-      - frontend_node_modules:/usr/src/app/node_modules
     command: npm run dev
     ports:
       - "5173:5173"

@@ -15,11 +15,23 @@ import {
   subscribeUser,
   confirmSubscription,
   unsubscribeUser,
+  isEmailConfirmed,
+  TokenNotFoundError,
 } from "../services/subscriptionService";
 import { Frequency } from "@prisma/client";
+import nodemailer from "nodemailer";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 4000;
+
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT),
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASSWORD,
+  },
+});
 
 // --- Middleware ---
 app.use(express.json());
@@ -65,30 +77,37 @@ app.post(
   "/api/subscribe",
   wrap(async (req: Request, res: Response) => {
     const { email, city, frequency } = req.body;
-    if (!email || !city || !frequency) {
-      return res.status(400).json({ error: "Invalid input" });
-    }
-    if (!["hourly", "daily"].includes(frequency)) {
-      return res
-        .status(400)
-        .json({ error: "Frequency must be hourly or daily" });
-    }
+
+
+    const sub = await subscribeUser(email, city, frequency as Frequency);
+    console.log("[subscribe] subscription record:", sub);
+
+    const confirmLink = `${process.env.APP_URL}/api/confirm/${sub.confirmToken}`;
+    console.log("[subscribe] will send email to:", email);
+    console.log("[subscribe] confirm link:", confirmLink);
 
     try {
-      const sub = await subscribeUser(email, city, frequency as Frequency);
-      // TODO: send confirmation email with sub.confirmToken
-      return res.json({
-        message: "Subscription successful. Confirmation email sent.",
+      const info = await transporter.sendMail({
+        from: process.env.SMTP_FROM,
+        to: email,
+        subject: "Confirm your weather subscription",
+        text: `Click to confirm: ${confirmLink}`,
+        html: `<a href="${confirmLink}">Confirm subscription</a>`,
       });
-    } catch (err: any) {
-      if (err.message === "Email already subscribed") {
-        return res.status(409).json({ error: err.message });
-      }
-      throw err;
+      console.log("[subscribe] sendMail info:", {
+        messageId: info.messageId,
+        accepted: info.accepted,
+        envelope: info.envelope,
+      });
+    } catch (err) {
+      console.error("[subscribe] sendMail error:", err);
     }
+
+    return res.json({
+      message: "Subscription successful. Confirmation email sent.",
+    });
   })
 );
-
 app.get(
   "/api/confirm/:token",
   wrap(async (req: Request, res: Response) => {
@@ -117,6 +136,27 @@ app.get(
       return res.json({ message: "Unsubscribed successfully" });
     } catch (err: any) {
       if (err.message.includes("Invalid")) {
+        return res.status(404).json({ error: err.message });
+      }
+      throw err;
+    }
+  })
+);
+
+app.get(
+  "/api/status",
+  wrap(async (req: Request, res: Response) => {
+    const email = req.query.email as string;
+
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+
+    try {
+      const confirmed = await isEmailConfirmed(email);
+      return res.json({ confirmed });
+    } catch (err: any) {
+      if (err instanceof TokenNotFoundError) {
         return res.status(404).json({ error: err.message });
       }
       throw err;

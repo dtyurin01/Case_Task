@@ -38,4 +38,3 @@ export async function getCurrentWeather(
     description: body.current.condition.text,
   };
 }
-    

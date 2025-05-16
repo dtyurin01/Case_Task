@@ -1,5 +1,5 @@
 import { PrismaClient, Frequency } from "@prisma/client";
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 
 const prisma = new PrismaClient();
 
@@ -61,6 +61,19 @@ export async function getSubscriptionByToken(token: string) {
   return prisma.subscription.findUnique({
     where: { unsubscribeToken: token },
   });
+}
+
+export async function isEmailConfirmed(email: string): Promise<boolean> {
+  const sub = await prisma.subscription.findUnique({
+    where: { email },
+    select: { confirmed: true },
+  });
+
+  if (!sub) {
+    throw new TokenNotFoundError("Subscription not found for given email");
+  }
+
+  return sub.confirmed;
 }
 
 export async function getAllSubscriptions() {
