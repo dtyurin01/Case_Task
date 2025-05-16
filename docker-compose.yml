@@ -12,8 +12,9 @@ services:
 
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
+
     env_file:
       - ./backend/.env
     volumes:
@@ -33,8 +34,8 @@ services:
 
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: frontend/Dockerfile
     env_file:
       - ./frontend/.env
     volumes:

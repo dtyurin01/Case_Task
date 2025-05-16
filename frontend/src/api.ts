@@ -1,19 +1,9 @@
-export interface SubscriptionPayload {
-  email: string;
-  city: string;
-  frequency: "hourly" | "daily";
-}
-
-export interface Weather {
-  temperature: number;
-  humidity: number;
-  description: string;
-}
-
-export interface SubscriptionResponse {
-  error: string;
-  message: string;
-}
+import type {
+  SubscriptionPayload,
+  Weather,
+  SubscriptionResponse,
+  UnsubscribeResponse,
+} from "../../shared/types";
 
 export async function fetchWeather(city: string): Promise<Weather> {
   const res = await fetch(`/api/weather?city=${encodeURIComponent(city)}`);
@@ -50,7 +40,7 @@ export async function subscribe(
 }
 
 export async function confirmSubscription(token: string) {
-  const res = await fetch(`/api/confirm?token=${encodeURIComponent(token)}`);
+  const res = await fetch(`/api/confirm/${encodeURIComponent(token)}`);
   const data = await res.json();
   if (!res.ok)
     throw new Error(
@@ -68,4 +58,20 @@ export async function checkConfirmationStatus(email: string): Promise<boolean> {
 
   const data = await res.json();
   return data.confirmed;
+}
+
+export async function unsubscribe(token: string): Promise<UnsubscribeResponse> {
+  const res = await fetch(`/api/unsubscribe/${encodeURIComponent(token)}`, {
+    method: "GET",
+  });
+  const data: UnsubscribeResponse = await res.json();
+
+  if (!res.ok) {
+    throw new Error(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (data as any).error || data.message || `Unsubscribe failed: ${res.status}`
+    );
+  }
+
+  return data;
 }
