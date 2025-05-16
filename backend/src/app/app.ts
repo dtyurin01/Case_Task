@@ -20,7 +20,9 @@ import {
 } from "../services/subscriptionService";
 import { Frequency } from "@prisma/client";
 import nodemailer from "nodemailer";
-
+import { PrismaClient } from "@prisma/client";
+import { sendWeatherEmail } from "../services/emailService";
+const prisma = new PrismaClient();
 const app = express();
 const PORT = Number(process.env.PORT) || 4000;
 
@@ -114,7 +116,17 @@ app.get(
     const { token } = req.params;
     try {
       await confirmSubscription(token);
-      return res.json({ message: "Subscription confirmed successfully" });
+      const sub = await prisma.subscription.findUnique({
+        where: { confirmToken: token },
+      });
+      if (sub) {
+        try {
+          await sendWeatherEmail(sub.email, sub.city);
+        } catch (err) {
+          console.error("Error sending initial weather email:", err);
+        }
+        return res.json({ message: "Subscription confirmed successfully" });
+      }
     } catch (err: any) {
       if (err.message === "Token not found") {
         return res.status(404).json({ error: err.message });

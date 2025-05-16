@@ -136,10 +136,6 @@ export default function App() {
     return "Subscribe";
   };
 
-  const getUnsubscribeButtonText = () => {
-    return unsubscribeToken ? "Unsubscribe" : "No token";
-  };
-
   return (
     <div className="app-container">
       <header className="app-header">
@@ -228,11 +224,10 @@ export default function App() {
 
         <button
           onClick={onUnsubscribe}
-          disabled={!unsubscribeToken}
           className="styled-button"
           style={{ backgroundColor: "#e74c3c", color: "#fff" }}
         >
-          {getUnsubscribeButtonText()}
+          Unsubscribe
         </button>
       </div>
 
