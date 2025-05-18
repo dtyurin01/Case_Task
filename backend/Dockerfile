@@ -1,13 +1,14 @@
 FROM node:20
 
 WORKDIR /usr/src/app
-COPY backend/package*.json ./
+
+COPY package*.json ./
 RUN npm install
 
-COPY backend/prisma ./prisma
+COPY prisma ./prisma
 RUN npx prisma generate
 
-COPY backend/. .
+COPY . .
 
 RUN npm run build
 
