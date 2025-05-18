@@ -22,6 +22,7 @@ import { Frequency } from "@prisma/client";
 import nodemailer from "nodemailer";
 import { PrismaClient } from "@prisma/client";
 import { sendWeatherEmail } from "../services/emailService";
+import cors from "cors";
 const prisma = new PrismaClient();
 const app = express();
 const PORT = Number(process.env.PORT) || 4000;
@@ -37,7 +38,7 @@ const transporter = nodemailer.createTransport({
 
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "*", 
+    origin: process.env.FRONTEND_URL || "*",
     credentials: true,
   })
 );
@@ -189,7 +190,3 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 });
 
 export default app;
-function cors(arg0: { origin: string; credentials: boolean; }): any {
-  throw new Error("Function not implemented.");
-}
-
