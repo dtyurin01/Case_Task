@@ -1,4 +1,4 @@
-# Weather Dashboard and Subscription Service
+# Weather Dashboard and Subscription Service ☀️
 
 A simple web application that provides current weather information for any city and allows users to subscribe for daily weather updates via email.
 
@@ -20,7 +20,6 @@ A simple web application that provides current weather information for any city 
 - **Frontend**:
   - React
   - Vite
-  - Tailwind CSS (optional styling layer)
 
 ## Deployment
 
