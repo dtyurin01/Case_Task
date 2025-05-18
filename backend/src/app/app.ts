@@ -23,6 +23,10 @@ import nodemailer from "nodemailer";
 import { PrismaClient } from "@prisma/client";
 import { sendWeatherEmail } from "../services/emailService";
 import cors from "cors";
+import sgMail from "@sendgrid/mail";
+
+sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
+
 const prisma = new PrismaClient();
 const app = express();
 const PORT = Number(process.env.PORT) || 4000;
@@ -86,30 +90,26 @@ app.get(
 app.post(
   "/api/subscribe",
   wrap(async (req: Request, res: Response) => {
-    const { email, city, frequency } = req.body;
+    const { email, city, frequency } = req.body as {
+      email: string;
+      city: string;
+      frequency: Frequency;
+    };
 
-    const sub = await subscribeUser(email, city, frequency as Frequency);
-    console.log("[subscribe] subscription record:", sub);
-
+    const sub = await subscribeUser(email, city, frequency);
     const confirmLink = `${process.env.APP_URL}/api/confirm/${sub.confirmToken}`;
-    console.log("[subscribe] will send email to:", email);
-    console.log("[subscribe] confirm link:", confirmLink);
 
     try {
-      const info = await transporter.sendMail({
-        from: process.env.SMTP_FROM,
+      await sgMail.send({
         to: email,
+        from: process.env.SENDGRID_FROM!,
         subject: "Confirm your weather subscription",
         text: `Click to confirm: ${confirmLink}`,
         html: `<a href="${confirmLink}">Confirm subscription</a>`,
       });
-      console.log("[subscribe] sendMail info:", {
-        messageId: info.messageId,
-        accepted: info.accepted,
-        envelope: info.envelope,
-      });
+      console.log("[subscribe] SendGrid: email sent to", email);
     } catch (err) {
-      console.error("[subscribe] sendMail error:", err);
+      console.error("[subscribe] SendGrid error:", err);
     }
 
     return res.json({

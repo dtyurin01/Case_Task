@@ -1,19 +1,20 @@
-import { getCurrentWeather } from "../services/weatherService"; 
-import transporter from "../mailTransporter";
+import { getCurrentWeather } from "../services/weatherService";
+import sgMail from "../mailTransporter";
 
 export async function sendWeatherEmail(email: string, city: string) {
   const apiKey = process.env.WEATHER_API_KEY!;
-
   const weather = await getCurrentWeather(city, apiKey);
+
   const html = `
     <h1>Weather Update for ${city}</h1>
     <p>Temperature: ${weather.temperature}°C</p>
     <p>Humidity: ${weather.humidity}%</p>
     <p>${weather.description}</p>
   `;
-  await transporter.sendMail({
-    from: process.env.SMTP_FROM,
+
+  await sgMail.send({
     to: email,
+    from: process.env.SENDGRID_FROM!,
     subject: `Weather update for ${city}`,
     html,
   });
