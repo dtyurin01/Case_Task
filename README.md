@@ -6,7 +6,7 @@ A simple web application that provides current weather information for any city 
 
 - **Fetch current weather** using the WeatherAPI ([https://www.weatherapi.com](https://www.weatherapi.com)).
 - **Subscribe** to daily weather reports for a chosen city.
-- **Confirmation emails** and **daily updates** sent via SendGrid _**(please check your spam folder, as emails may land there)**_.
+- **Confirmation emails** and **daily updates** sent via SendGrid IMPORTANT: _**(please check your spam folder, as emails may land there)**_.
 - **Unsubscribe** functionality to stop further emails.
 
 
