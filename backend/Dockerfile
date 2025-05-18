@@ -12,6 +12,8 @@ COPY . .
 
 RUN npm run build
 
+RUN npx prisma migrate deploy
+
 EXPOSE 4000
 
 CMD ["npm", "run", "dev"]
