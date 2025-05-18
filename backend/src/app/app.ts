@@ -108,6 +108,7 @@ app.post(
         html: `<a href="${confirmLink}">Confirm subscription</a>`,
       });
       console.log("[subscribe] SendGrid: email sent to", email);
+      console.log("Email sent:", res.statusCode);
     } catch (err) {
       console.error("[subscribe] SendGrid error:", err);
     }
