@@ -5,8 +5,12 @@ import type {
   UnsubscribeResponse,
 } from "../../shared/types";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? "";
+
 export async function fetchWeather(city: string): Promise<Weather> {
-  const res = await fetch(`/api/weather?city=${encodeURIComponent(city)}`);
+  const res = await fetch(
+    `${API_BASE_URL}/api/weather?city=${encodeURIComponent(city)}`
+  );
   if (!res.ok) {
     const err = await res.text();
     throw new Error(`Weather API error: ${res.status} — ${err}`);
@@ -17,7 +21,7 @@ export async function fetchWeather(city: string): Promise<Weather> {
 export async function subscribe(
   payload: SubscriptionPayload
 ): Promise<SubscriptionResponse> {
-  const res = await fetch(`/api/subscribe`, {
+  const res = await fetch(`${API_BASE_URL}/api/subscribe`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -40,7 +44,9 @@ export async function subscribe(
 }
 
 export async function confirmSubscription(token: string) {
-  const res = await fetch(`/api/confirm/${encodeURIComponent(token)}`);
+  const res = await fetch(
+    `${API_BASE_URL}/api/confirm/${encodeURIComponent(token)}`
+  );
   const data = await res.json();
   if (!res.ok)
     throw new Error(
@@ -50,7 +56,9 @@ export async function confirmSubscription(token: string) {
 }
 
 export async function checkConfirmationStatus(email: string): Promise<boolean> {
-  const res = await fetch(`/api/status?email=${encodeURIComponent(email)}`);
+  const res = await fetch(
+    `${API_BASE_URL}/api/status?email=${encodeURIComponent(email)}`
+  );
   if (!res.ok) {
     const error = await res.json().catch(() => ({}));
     throw new Error(error.error || `Status check failed: ${res.status}`);
@@ -61,9 +69,12 @@ export async function checkConfirmationStatus(email: string): Promise<boolean> {
 }
 
 export async function unsubscribe(token: string): Promise<UnsubscribeResponse> {
-  const res = await fetch(`/api/unsubscribe/${encodeURIComponent(token)}`, {
-    method: "GET",
-  });
+  const res = await fetch(
+    `${API_BASE_URL}/api/unsubscribe/${encodeURIComponent(token)}`,
+    {
+      method: "GET",
+    }
+  );
   const data: UnsubscribeResponse = await res.json();
 
   if (!res.ok) {

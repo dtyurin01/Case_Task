@@ -35,6 +35,13 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "*", 
+    credentials: true,
+  })
+);
+
 // --- Middleware ---
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -182,3 +189,7 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 });
 
 export default app;
+function cors(arg0: { origin: string; credentials: boolean; }): any {
+  throw new Error("Function not implemented.");
+}
+
