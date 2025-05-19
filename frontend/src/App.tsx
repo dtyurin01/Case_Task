@@ -73,7 +73,6 @@ export default function App() {
         frequency,
       };
       const data = await subscribe(payload);
-      console.log("Subscribe response:", data);
       setUnsubscribeToken(data.unsubscribeToken);
       addNotification(
         "You are subscribed! Please check your email.",
@@ -91,7 +90,6 @@ export default function App() {
     if (!unsubscribeToken) return;
     try {
       const res = await unsubscribe(unsubscribeToken);
-      console.log("Unsubscribe response:", res);
       addNotification(res.message || "Unsubscribed successfully", "success");
       setUnsubscribeToken(null);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

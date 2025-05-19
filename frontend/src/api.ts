@@ -27,12 +27,7 @@ export async function subscribe(
     body: JSON.stringify(payload),
   });
 
-  let data: SubscriptionResponse;
-  try {
-    data = await res.json();
-  } catch {
-    throw new Error(`Subscribe failed with status ${res.status}`);
-  }
+  const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {
     throw new Error(
@@ -40,7 +35,7 @@ export async function subscribe(
     );
   }
 
-  return data;
+  return data as SubscriptionResponse;
 }
 
 export async function confirmSubscription(token: string) {

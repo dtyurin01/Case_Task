@@ -17,6 +17,7 @@ import {
   unsubscribeUser,
   isEmailConfirmed,
   TokenNotFoundError,
+  EmailAlreadySubscribedError,
 } from "../services/subscriptionService";
 import { Frequency } from "@prisma/client";
 import nodemailer from "nodemailer";
@@ -96,15 +97,17 @@ app.post(
       frequency: Frequency;
     };
 
-    const sub = await subscribeUser(email, city, frequency);
-    const confirmLink = `${process.env.APP_URL}/api/confirm/${sub.confirmToken}`;
-    const unsubscribeLink = `${process.env.APP_URL}/api/unsubscribe/${sub.unsubscribeToken}`;
+    try {
+      const sub = await subscribeUser(email, city, frequency);
 
-    const subject = "Please confirm your Weather Dashboard subscription";
-    const text = `
+      const confirmLink = `${process.env.APP_URL}/api/confirm/${sub.confirmToken}`;
+      const unsubscribeLink = `${process.env.APP_URL}/api/unsubscribe/${sub.unsubscribeToken}`;
+
+      const subject = "Please confirm your Weather Dashboard subscription";
+      const text = `
 Hello ${email},
 
-Thank you for subscribing to Weather Dashboard!  
+Thank you for subscribing to Weather Dashboard!
 
 To activate your subscription, please visit the link below:
 ${confirmLink}
@@ -113,30 +116,29 @@ If you did not request this, you can ignore this email or unsubscribe here:
 ${unsubscribeLink}
 
 Best regards,
-Your Dev Team
-  `.trim();
+Weather Dashboard Team
+      `.trim();
 
-    const html = `
-  <div style="font-family:Arial,sans-serif;line-height:1.5;color:#333;">
-    <h2 style="color:#1a73e8;">Welcome to Weather Dashboard!</h2>
-    <p>Hello <strong>${email}</strong>,</p>
-    <p>Thanks for subscribing to <strong>Weather Dashboard</strong>. To activate your subscription, click the button below:</p>
-    <p style="text-align:center;">
-      <a href="${confirmLink}"
-         style="background:#1a73e8;color:#fff;padding:12px 24px;text-decoration:none;border-radius:4px;display:inline-block;">
-        Confirm Subscription
-      </a>
-    </p>
-    <p>If the button above doesn’t work, copy and paste this URL into your browser:</p>
-    <p><a href="${confirmLink}">${confirmLink}</a></p>
-    <hr style="border:none;border-top:1px solid #eee;margin:24px 0;" />
-    <p>If you did not request this, you can safely ignore this email or click <a href="${unsubscribeLink}">unsubscribe</a>.</p>
-    <p>Questions? Reply to this email or contact us at <a href="mailto:support@weatherdashboard.com">support@weatherdashboard.com</a>.</p>
-    <p style="margin-top:32px;">Best regards,<br/>Weather Dashboard Team</p>
-  </div>
-  `.trim();
+      const html = `
+<div style="font-family:Arial,sans-serif;line-height:1.5;color:#333;">
+  <h2 style="color:#1a73e8;">Welcome to Weather Dashboard!</h2>
+  <p>Hello <strong>${email}</strong>,</p>
+  <p>Thanks for subscribing to <strong>Weather Dashboard</strong>. To activate your subscription, click the button below:</p>
+  <p style="text-align:center;">
+    <a href="${confirmLink}"
+       style="background:#1a73e8;color:#fff;padding:12px 24px;text-decoration:none;border-radius:4px;display:inline-block;">
+      Confirm Subscription
+    </a>
+  </p>
+  <p>If the button above doesn’t work, copy and paste this URL into your browser:</p>
+  <p><a href="${confirmLink}">${confirmLink}</a></p>
+  <hr style="border:none;border-top:1px solid #eee;margin:24px 0;" />
+  <p>If you did not request this, you can safely ignore this email or click <a href="${unsubscribeLink}">unsubscribe</a>.</p>
+  <p style="margin-top:32px;">Best regards,<br/>Weather Dashboard Team</p>
+  <p style="font-size:0.9em;color:#666;">Письма могут попадать в папку «Спам».</p>
+</div>
+      `.trim();
 
-    try {
       await sgMail.send({
         to: email,
         from: process.env.SENDGRID_FROM!,
@@ -145,14 +147,19 @@ Your Dev Team
         html,
       });
       console.log("[subscribe] SendGrid: confirmation email sent to", email);
-    } catch (err) {
-      console.error("[subscribe] SendGrid error:", err);
-    }
 
-    return res.json({
-      message: "Confirmation email sent.",
-      unsubscribeToken: sub.unsubscribeToken,
-    });
+      return res.json({
+        message: "Confirmation email sent.",
+        unsubscribeToken: sub.unsubscribeToken,
+      });
+    } catch (err) {
+      if (err instanceof EmailAlreadySubscribedError) {
+        return res
+          .status(409)
+          .json({ message: "This mail is already subscribed" });
+      }
+      throw err;
+    }
   })
 );
 app.get(
