@@ -21,10 +21,10 @@ async function sendBatch(freq: Frequency) {
   }
 }
 
-cron.schedule("0 * * * *", () => {
-  sendBatch("hourly");
+cron.schedule("0 * * * *", () => sendBatch("hourly"), {
+  timezone: "Europe/Berlin",
 });
 
-cron.schedule("0 0 * * *", () => {
-  sendBatch("daily");
+cron.schedule("0 0 * * *", () => sendBatch("daily"), {
+  timezone: "Europe/Berlin",
 });
